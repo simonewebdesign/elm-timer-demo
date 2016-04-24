@@ -4,6 +4,8 @@ import Task exposing (Task)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Time
+import Timer
 
 
 main : Signal Html
@@ -14,13 +16,14 @@ main =
 -- MODEL
 
 type alias Model =
-  {
+
+  { timer1 : Timer.Model
   }
 
 
 initialModel : Model
 initialModel =
-  {
+  { timer1 = Timer.init
   }
 
 
@@ -28,6 +31,7 @@ initialModel =
 
 type Action
   = NoOp
+  | Timer1 Timer.Action
 
 
 update : Action -> Model -> Model
@@ -36,14 +40,19 @@ update action model =
     NoOp ->
       model
 
+    Timer1 subAction ->
+      { model | timer1 = Timer.update subAction model.timer1 }
+
 
 -- VIEW
 
 view : Address Action -> Model -> Html
-view address model =
+view address ({timer1} as model) =
   div []
-    [
-      text <| toString model
+    [ div []
+        [ div [] [ text <| "A regular timer: " ++ (Timer.view timer1) ]
+        ]
+    , text <| "Model: " ++ toString model
     ]
 
 
@@ -56,14 +65,21 @@ actions =
 
 model : Signal Model
 model =
-  Signal.foldp update initialModel actions.signal
+  Signal.foldp update initialModel input
 
 
-tasksMailbox : Mailbox (Task x ())
-tasksMailbox =
-  Signal.mailbox (Task.succeed ())
+input : Signal Action
+input =
+  Signal.mergeMany
+      [ actions.signal
+      , Signal.map Timer1 Timer.tick
+      ]
+
+--tasksMailbox : Mailbox (Task x ())
+--tasksMailbox =
+--  Signal.mailbox (Task.succeed ())
 
 
-port tasks : Signal (Task x ())
-port tasks =
-  tasksMailbox.signal
+--port tasks : Signal (Task x ())
+--port tasks =
+--  tasksMailbox.signal
