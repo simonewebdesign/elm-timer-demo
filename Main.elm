@@ -1,56 +1,49 @@
 
-import Signal exposing (Address, Mailbox)
-import Task exposing (Task)
 import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
 import Time
 import Timer
-
-
-main : Signal Html
-main =
-  Signal.map (view actions.address) model
 
 
 -- MODEL
 
 type alias Model =
-
   { timer1 : Timer.Model
+  , timer2 : Timer.Model
   }
 
 
 initialModel : Model
 initialModel =
   { timer1 = Timer.init
+  , timer2 = Timer.init' << round <| Time.inSeconds Time.minute * 12
   }
 
 
 -- UPDATE
 
 type Action
-  = NoOp
-  | Timer1 Timer.Action
+  = Timer1 Timer.Action
+  | Timer2 Timer.Action
 
 
 update : Action -> Model -> Model
 update action model =
   case Debug.log "Main" action of
-    NoOp ->
-      model
+    Timer1 subAction1 ->
+      { model | timer1 = Timer.update subAction1 model.timer1 }
 
-    Timer1 subAction ->
-      { model | timer1 = Timer.update subAction model.timer1 }
+    Timer2 subAction2 ->
+      { model | timer2 = Timer.update subAction2 model.timer2 }
 
 
 -- VIEW
 
-view : Address Action -> Model -> Html
-view address ({timer1} as model) =
+view : Model -> Html
+view ({timer1, timer2} as model) =
   div []
     [ div []
         [ div [] [ text <| "A regular timer: " ++ (Timer.view timer1) ]
+        , div [] [ text <| "Starts at 12:00: " ++ (Timer.view timer2) ]
         ]
     , text <| "Model: " ++ toString model
     ]
@@ -58,9 +51,9 @@ view address ({timer1} as model) =
 
 -- SIGNALS
 
-actions : Mailbox Action
-actions =
-  Signal.mailbox NoOp
+main : Signal Html
+main =
+  Signal.map view model
 
 
 model : Signal Model
@@ -71,15 +64,6 @@ model =
 input : Signal Action
 input =
   Signal.mergeMany
-      [ actions.signal
-      , Signal.map Timer1 Timer.tick
+      [ Signal.map Timer1 Timer.tick
+      , Signal.map Timer2 Timer.tick
       ]
-
---tasksMailbox : Mailbox (Task x ())
---tasksMailbox =
---  Signal.mailbox (Task.succeed ())
-
-
---port tasks : Signal (Task x ())
---port tasks =
---  tasksMailbox.signal
