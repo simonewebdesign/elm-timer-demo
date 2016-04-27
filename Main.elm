@@ -63,7 +63,6 @@ model =
 
 input : Signal Action
 input =
-  Signal.mergeMany
-      [ Signal.map Timer1 Timer.tick
-      , Signal.map Timer2 Timer.tick
-      ]
+  Signal.merge
+    (Signal.map Timer1 Timer.tick)
+    (Signal.map Timer2 Timer.tick)
